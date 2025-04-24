@@ -26,4 +26,26 @@ node_modules/
 
 # Task files
 tasks.json
-tasks/ 
+tasks/
+
+# Python / Poetry
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Output directory for generated files
+output/
+
+# Dotenv file
+.env* 

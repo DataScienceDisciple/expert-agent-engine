@@ -1,0 +1,9 @@
+{
+  "userAgentGoal": "Compare fasting vs. GLP-1 for cancer prevention.",
+  "expertAgentPersona": "Expert oncologist specializing in preventative medicine and metabolic health.",
+  "maxIterations": 5,
+  "openaiApiKey": "YOUR_OPENAI_API_KEY_HERE_OR_LEAVE_BLANK_TO_USE_ENV",
+  "openaiModel": "gpt-4-turbo",
+  "outputDir": "output",
+  "historyFilePath": null
+}
