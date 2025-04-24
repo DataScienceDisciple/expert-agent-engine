@@ -1,0 +1,96 @@
+# PRD: LLM Knowledge Mining Workflow
+
+## 1. Introduction & Vision
+
+*   **Goal:** To automate and enhance the process of extracting deep, specific knowledge from Large Language Models (LLMs) by simulating goal-oriented dialogues between specialized agents.
+*   **Vision:** A system where users can define a knowledge-seeking 'User Agent' (representing themselves and their goal) and an 'Expert Agent' LLM (with a defined persona), orchestrate their iterative interaction, and receive structured, distilled knowledge outputs relevant to the goal.
+
+## 2. Goals (MVP - Minimum Viable Product)
+
+*   Develop a core engine capable of running a simulated conversation between a User Agent and an Expert Agent based on initial configuration loaded from a file.
+*   Implement configuration loading from a `config.json` or `config.yaml` file.
+*   Enable the User Agent to ask a predefined number of follow-up questions based on the Expert Agent's responses, driven by a defined prompting strategy.
+*   Allow the system to optionally use a provided text transcript as the starting context for the conversation.
+*   Integrate with the OpenAI API for LLM interactions.
+*   Implement functionality to save two distinct output files upon completion: the full conversation transcript and a separate file containing distilled takeaways.
+*   Define the User Agent's goal and the Expert Agent's persona via the configuration file.
+
+## 3. User Personas / Agents
+
+*   **User Agent:**
+    *   **Represents:** The end-user aiming to extract specific knowledge (e.g., comparing fasting vs. GLP-1 for cancer prevention).
+    *   **Input Configuration (from config file):**
+        *   Initial Goal Description (Textual).
+        *   Optional: Path to Starting Conversation History (Text file).
+        *   Maximum number of interaction turns.
+    *   **Behavior (MVP):**
+        *   Initiates the conversation based on the goal. If history is provided, it uses the history as the initial context for the first turn.
+        *   Given the Expert Agent's last response, formulate a follow-up question using a targeted prompt like:
+            ```
+            You are a User Agent with the goal: "[User Agent Goal]".
+            The conversation history so far is:
+            [Previous turns]
+            Expert Agent just said: "[Expert Agent's Last Response]"
+
+            Based *only* on the Expert Agent's last response and your overall goal, ask one specific, open-ended follow-up question to gain deeper understanding or clarification relevant to your goal. Do not repeat questions already asked. If the last response seems sufficient or doesn't offer much to probe, ask a question that broadens the inquiry slightly while staying focused on the goal.
+            ```
+    *   **Termination (MVP):** Stops after the configured maximum number of iterations is reached.
+
+*   **Expert Agent:**
+    *   **Represents:** An LLM (via OpenAI API) configured with a specific persona or expertise (e.g., "Expert oncologist specializing in preventative medicine and metabolic health").
+    *   **Input Configuration (from config file):**
+        *   Persona Description (Textual, used in the system prompt).
+    *   **Behavior:**
+        *   Receives the conversation history and the User Agent's latest question.
+        *   Responds according to its defined persona and the context of the conversation via the OpenAI API.
+
+## 4. Functional Requirements (MVP)
+
+*   **FR1: Configuration:**
+    *   The system must load configuration from a `config.json` or `config.yaml` file.
+    *   This file must specify: User Agent Goal, Expert Agent Persona, Max Iterations, OpenAI API Key/credentials (or reference environment variables), Output Directory, Optional History File Path.
+*   **FR2: Conversation Initiation:**
+    *   The system must start a new conversation using the configured goal and persona.
+    *   If a history file path is provided in the config, the system must load this text and use it as the initial conversational context before the User Agent's first actual turn.
+*   **FR3: Interaction Loop (OpenAI Integration):**
+    *   The core engine manages the turn-based conversation flow: User Agent asks -> Expert Agent responds.
+    *   All LLM interactions (User Agent question generation, Expert Agent response) must use the configured OpenAI API.
+    *   The User Agent uses its defined prompt strategy (see Section 3) to generate follow-up questions.
+    *   The loop continues until the configured maximum number of iterations is reached.
+*   **FR4: Output Generation (Transcript & Takeaways):**
+    *   Upon completion (max iterations reached), the system must save the entire conversation transcript (clearly indicating User Agent and Expert Agent turns) to a uniquely named text file in the configured output directory.
+    *   **FR4.1: Takeaway Generation (MVP):** After the conversation loop, the system must make a separate OpenAI API call, providing the full transcript and a prompt (like the example below) to generate distilled takeaways.
+        ```
+        The following is a conversation between a User Agent (Goal: "[User Agent Goal]") and an Expert Agent (Persona: "[Expert Agent Persona]").
+        
+        [Full Conversation Transcript]
+        
+        Please distill the key takeaways, insights, and actionable information from this conversation specifically related to the User Agent's goal. Present them as clear, concise bullet points suitable for pasting into a knowledge base. Focus on the information provided by the Expert Agent that directly addresses the goal.
+        ```
+    *   **FR4.2: Takeaway Saving:** The generated takeaways must be saved to a second, uniquely named text file (distinct from the transcript) in the configured output directory.
+*   **FR5: Basic Error Handling:** Implement basic error handling for OpenAI API calls (e.g., connection issues, API errors) and file operations. Log errors clearly.
+
+## 5. What Might Be Missing / Questions to Refine for MVP & Beyond
+
+*   **YAML/JSON Schema:** Define the exact structure for `config.json`/`config.yaml`.
+*   **API Key Management:** Define the preferred secure method for handling the OpenAI API key (e.g., environment variable `OPENAI_API_KEY`).
+*   **Rate Limiting:** Consider basic handling or awareness of OpenAI API rate limits.
+*   **Takeaway Quality:** The quality of MVP takeaways depends heavily on the final prompt. May need refinement.
+*   **Goal Achievement Detection (Post-MVP):** How can the system detect if the User Agent's goal is substantively achieved before hitting max iterations? Requires defining evaluation metrics or heuristics.
+*   **Output Destinations (Post-MVP):** What are the specific requirements for Google Drive and Notion integration (authentication, folder structure, file formats)?
+*   **User Interface (Assumption):** Assume a command-line interface (CLI) for the MVP. How will configuration be passed (path to config file)?
+
+## 6. Future Considerations / Roadmap (Lower Priority - Post MVP)
+
+*   **FC1: Advanced Goal Achievement:** Implement logic for the User Agent to self-assess goal completion based on conversation analysis, enabling dynamic termination.
+*   **FC2: Sophisticated Question Generation:** Explore and implement more advanced questioning strategies: Chain-of-Thought, asking for evidence/sources, identifying knowledge gaps, requesting different perspectives.
+*   **FC3: Takeaway Refinement:** Improve takeaway generation, potentially allowing user feedback or iterative refinement.
+*   **FC4: Cloud Storage Integration:** Implement secure API integrations for saving outputs (transcripts, takeaways) directly to Google Drive and/or Notion, including user authentication flows.
+*   **FC5: State-of-the-Art Research & Integration:**
+    *   **Memory:** Explore adding short-term/long-term memory mechanisms (e.g., vector databases, summarization techniques) for more context-aware conversations.
+    *   **Planning:** Enable the User Agent to generate a multi-step plan to achieve complex goals.
+    *   **Tool Use:** Allow the Expert Agent to use external tools (e.g., web search via an API like Perplexity or Tavily, code execution) to fetch real-time information or perform calculations.
+    *   **Agent Frameworks:** Investigate leveraging existing multi-agent frameworks (e.g., AutoGen, CrewAI, LangGraph) to potentially simplify development and add capabilities.
+    *   **Evaluation:** Research and implement metrics or frameworks for evaluating the quality, relevance, and accuracy of the knowledge mined.
+*   **FC6: User Interface:** Develop a graphical user interface (GUI) or web interface for easier configuration, execution monitoring, and results viewing.
+*   **FC7: Agent Customization:** Allow more granular control over agent behaviors, prompting strategies, and LLM model selection (beyond just OpenAI). 
